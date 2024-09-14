@@ -1,15 +1,9 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  Logger,
-  NotFoundException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaClient } from '@prisma/client';
 import { PaginationDto } from 'src/common';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class ProductsService extends PrismaClient implements OnModuleInit {
@@ -48,16 +42,19 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
       where: { id, available: true },
     });
     if (!product) {
-      throw new NotFoundException(`Product with id: #${id} Not Found`);
+      throw new RpcException({
+        message: `Product with id: #${id} Not Found`,
+        status: HttpStatus.BAD_REQUEST,
+      });
     }
     return product;
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
-    const {id:__, ...data}= updateProductDto;
+    const { id: __, ...data } = updateProductDto;
     const product = await this.findOne(id);
     if (!product) {
-      throw new NotFoundException(`Product with id: #${id} Not Found`);
+      throw new RpcException(`Product with id: #${id} Not Found`);
     }
 
     return await this.product.update({
@@ -67,23 +64,29 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   async remove(id: number) {
-    try {
-      const product = await this.findOne(id);
-      if (!product) {
-        throw new NotFoundException(`Product with id: #${id} Not Found`);
-      }
-
-      return await this.product.update({
-        where: { id },
-        data: {
-          available: false,
-        },
-      });
-    } catch (error) {
-      throw new HttpException(
-        `Ha ocurrido un error: ${error.message}`,
-        HttpStatus.I_AM_A_TEAPOT,
-      );
+    const product = await this.findOne(id);
+    if (!product) {
+      throw new RpcException(`Product with id: #${id} Not Found`);
     }
+    return await this.product.update({
+      where: { id },
+      data: {
+        available: false,
+      },
+    });
+  }
+  async validateProducts(ids: number[]) {
+    ids = Array.from(new Set(ids));
+    const products = await this.product.findMany({
+      where: { id: { in: ids } },
+    });
+    if(products.length !== ids.length) {
+      throw new RpcException({
+        message: `Some Product with Not Found`,
+        status: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    return products;
   }
 }
