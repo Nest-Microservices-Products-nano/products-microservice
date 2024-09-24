@@ -1,0 +1,51 @@
+# Stage 1: Install dependencies
+FROM node:21-alpine3.19 AS deps
+
+WORKDIR /usr/src/app
+
+# Copy package files to install dependencies
+COPY package*.json ./
+
+# Install both dev and prod dependencies
+RUN npm ci --ignore-scripts
+
+# Stage 2: Build the project
+FROM node:21-alpine3.19 AS build
+
+WORKDIR /usr/src/app
+
+# Copy node_modules from deps
+COPY --from=deps /usr/src/app/node_modules ./node_modules
+# Copy source code
+COPY . .
+
+# Run Prisma migrations
+RUN npx prisma migrate
+
+# Build the application
+RUN npm run build
+
+# Remove dev dependencies to optimize the final image size
+RUN npm prune --production && npm cache clean --force
+
+# Stage 3: Final production image
+FROM node:21-alpine3.19 AS prod
+
+WORKDIR /usr/src/app
+
+# Copy node_modules and the built application from the build stage
+COPY --from=build /usr/src/app/node_modules ./node_modules
+COPY --from=build /usr/src/app/dist ./dist
+COPY --from=build /usr/src/app/prisma ./prisma
+
+# Set environment to production
+ENV NODE_ENV=production
+
+# Use a non-root user for security
+USER node
+
+# Expose the application's port
+EXPOSE 3000
+
+# Command to run the application
+CMD ["node", "dist/main.js"]
