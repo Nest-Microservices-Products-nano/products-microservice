@@ -20,8 +20,8 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
 
 # Run Prisma migrations
-RUN npx prisma migrate
-
+#RUN npx prisma migrate deploy
+RUN npx prisma generate 
 # Build the application
 RUN npm run build
 
@@ -41,7 +41,10 @@ COPY --from=build /usr/src/app/prisma ./prisma
 # Set environment to production
 ENV NODE_ENV=production
 
-# Use a non-root user for security
+# Ensure proper permissions for the prisma folder and dev.db
+RUN chmod -R 777 /usr/src/app/prisma && chown -R node:node /usr/src/app/prisma
+
+# Switch to non-root user for security
 USER node
 
 # Expose the application's port
