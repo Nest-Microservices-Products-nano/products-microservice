@@ -20,7 +20,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
-  logger.log("Deployment")
+  logger.log("Deployment to gcp")
   logger.log(`App Running on port: ${envs.port}`)
   await app.listen();
 }
