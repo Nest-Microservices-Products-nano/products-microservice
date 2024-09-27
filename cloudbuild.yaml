@@ -1,0 +1,21 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t", 
+        "southamerica-west1-docker.pkg.dev/tienda-microservices-436802/image-registry-tienda/products-ms",
+        "-f",
+        "dockerfile.prod",
+        "--platform=linux/amd64",
+        ".",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "push",
+        "southamerica-west1-docker.pkg.dev/tienda-microservices-436802/image-registry-tienda/products-ms",
+      ]
+# Replace [BUCKET_NAME] with your bucket name
+options:
+  logging: CLOUD_LOGGING_ONLY
