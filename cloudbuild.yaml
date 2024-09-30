@@ -16,6 +16,10 @@ steps:
         "push",
         "southamerica-west1-docker.pkg.dev/tienda-microservices-436802/image-registry-tienda/products-ms",
       ]
+availableSecrets:
+  secretManager:
+  - versionName: projects/34932086606/secrets/auth_data_base/versions/1
+    env: 'DATABASE_URL'
 # Replace [BUCKET_NAME] with your bucket name
 options:
   logging: CLOUD_LOGGING_ONLY
